@@ -1,0 +1,64 @@
+From cbb5a6c23b574f0a7024333f4efa794c9c3bb9ed Mon Sep 17 00:00:00 2001
+From: Tachyonray <corral.swamps.5k@icloud.com>
+Date: Mon, 24 Aug 2026 16:43:47 +0200
+Subject: [PATCH] Allow specifying AMDGPU_TARGETS with CMake flags
+
+Fix build when main compiler is set to GCC.
+
+Co-authored-by: Paul Zander <negril.nx+gentoo@gmail.com>
+---
+ devices/CMakeLists.txt     | 9 ++++++++-
+ devices/hip/CMakeLists.txt | 4 ++--
+ 2 files changed, 10 insertions(+), 3 deletions(-)
+
+diff --git a/devices/CMakeLists.txt b/devices/CMakeLists.txt
+index a0ea112..544fb1b 100644
+--- a/devices/CMakeLists.txt
++++ b/devices/CMakeLists.txt
+@@ -127,6 +127,10 @@ if(OIDN_DEVICE_HIP)
+     endif()
+   endif()
+ 
++  set(AMDGPU_TARGETS "gfx902,gfx909,gfx90c,gfx1030,gfx1031,gfx1032,gfx1033,gfx1034,gfx1035,gfx1036,gfx1100,gfx1101,gfx1102,gfx1103,gfx1150,gfx1151,gfx1152,gfx1200,gfx1201" CACHE STRING "AMD GPU targets to compile for")
++  mark_as_advanced(AMDGPU_TARGETS)
++  message(STATUS "AMD targets: ${AMDGPU_TARGETS}")
++
+   # Find HIP compiler
+   find_program(OIDN_DEVICE_HIP_COMPILER
+     NAMES
+@@ -157,7 +161,6 @@ if(OIDN_DEVICE_HIP)
+     CMAKE_CACHE_ARGS
+       -DCMAKE_PREFIX_PATH:STRING=${_hip_prefix_path_str}
+       -DCMAKE_CXX_COMPILER:FILEPATH=${OIDN_DEVICE_HIP_COMPILER}
+-      -DCMAKE_TOOLCHAIN_FILE:FILEPATH=${CMAKE_TOOLCHAIN_FILE}
+       -DCMAKE_BUILD_TYPE:STRING=${CMAKE_BUILD_TYPE}
+       -DCMAKE_INSTALL_PREFIX:PATH=${CMAKE_CURRENT_BINARY_DIR}/hip/preinstall
+       -DCMAKE_INSTALL_BINDIR:PATH=${CMAKE_INSTALL_BINDIR}
+@@ -170,6 +173,10 @@ if(OIDN_DEVICE_HIP)
+       -DOIDN_API_NAMESPACE:STRING=${OIDN_API_NAMESPACE}
+       -DOIDN_WARN_AS_ERRORS:BOOL=${OIDN_WARN_AS_ERRORS}
+       -DOIDN_SANITIZER:STRING=${OIDN_SANITIZER}
++      -DGPU_TARGETS:STRING=${AMDGPU_TARGETS}
++      -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON
++      -G "${CMAKE_GENERATOR}"
++
+     BUILD_ALWAYS TRUE
+     DEPENDS
+       OpenImageDenoise_core
+diff --git a/devices/hip/CMakeLists.txt b/devices/hip/CMakeLists.txt
+index b9928b3..830da92 100644
+--- a/devices/hip/CMakeLists.txt
++++ b/devices/hip/CMakeLists.txt
+@@ -25,8 +25,8 @@ include(oidn_common_external)
+ # FIXME: Older versions of the HIP runtime have a bug which may cause a crash if the kernels are
+ # not compiled for all targets detected in the system (it seems mostly APUs/integrated GPUs).
+ # As a workaround, we compile for more targets then we actually support to avoid this crash.
+-set(GPU_TARGETS "gfx902,gfx909,gfx90c,gfx1030,gfx1031,gfx1032,gfx1033,gfx1034,gfx1035,gfx1036,gfx1100,gfx1101,gfx1102,gfx1103,gfx1150,gfx1151,gfx1152,gfx1200,gfx1201" CACHE INTERNAL "")
+-set(AMDGPU_TARGETS ${GPU_TARGETS} CACHE INTERNAL "")
++set(GPU_TARGETS "gfx902,gfx909,gfx90c,gfx1030,gfx1031,gfx1032,gfx1033,gfx1034,gfx1035,gfx1036,gfx1100,gfx1101,gfx1102,gfx1103,gfx1150,gfx1151,gfx1152,gfx1200,gfx1201" CACHE STRING "")
++set(AMDGPU_TARGETS ${GPU_TARGETS} CACHE STRING "")
+ 
+ # Enable parallel Clang jobs per source file: Clang generates code for each GPU
+ # ISA target in parallel, which significantly speeds up HIP compilation.
+-- 
+2.55.0
